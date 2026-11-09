@@ -83,7 +83,11 @@ if [[ -z "${source_dir}" || -z "${build_type}" || -z "${cxx_standard}" ]]; then
 fi
 
 set -x
-build_dir=${source_dir}/build
+# Use a separate build directory per C++ standard. CI builds the example for
+# C++20 and then C++23 in back-to-back steps; sharing one directory meant the
+# second step had to delete the first one's tree, which fails on Windows while
+# the just-built exe/dll is still held open.
+build_dir=${source_dir}/build/cxx${cxx_standard}
 
 # Clean up before configuring. If Windows still holds a just-built exe/dll
 # after the retries, let mkdir fail rather than reuse a half-deleted tree.
@@ -97,6 +101,7 @@ for attempt in 1 2 3; do
         echo "Failed to remove build directory after 3 attempts: ${build_dir}" >&2
     fi
 done
+mkdir -p "$(dirname "${build_dir}")"
 mkdir "${build_dir}"
 pushd ${build_dir}
 
